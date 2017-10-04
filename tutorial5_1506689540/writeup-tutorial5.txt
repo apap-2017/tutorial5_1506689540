@@ -1,0 +1,8 @@
+https://imgur.com/a/1RJpL // Bukti Screenshoot Pengerjaan Tutorial
+
+------------ Write Up Tutorial 5
+
+Hal baru yang dipelajari :
+- Cara menggunakan @Result dan @Results annotations beserta atributnya.
+- @Result dapat mengembalikan hasil berupa List
+- Anotasi @Many diperlukan untuk mengembalikan result berupa value
