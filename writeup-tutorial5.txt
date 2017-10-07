@@ -6,3 +6,86 @@ Hal baru yang dipelajari :
 - Cara menggunakan @Result dan @Results annotations beserta atributnya.
 - @Result dapat mengembalikan hasil berupa List
 - Anotasi @Many diperlukan untuk mengembalikan result berupa value
+
+
+------------ METHOD selectAllStudents
+
+-- StudentMapper.java
+@Select("select npm, name, gpa from student")
+    @Results(value= {
+    		@Result(property="npm", column="npm"),
+    		@Result(property="name", column="name"),
+    		@Result(property="gpa", column="gpa"),
+    		@Result(property="courses", column="npm",
+    		javaType=List.class, 
+    		many=@Many(select="selectCourses"))
+    })
+    List<StudentModel> selectAllStudents ();
+
+pada method ini resultnya diubah supaya bisa mengembalikan list yang berisi course yang diambil oleh student dengan npm tertentu.
+
+@Select("select studentcourse.id_course, name, credits from studentcourse join course on studentcourse.id_course = course.id_course where studentcourse.npm = #{npm}")
+    List<CourseModel> selectCourses (@Param("npm") String npm);
+
+method ini dibuat untuk mengambil list berisi course yang diambil oleh student dengan npm tertentu.
+
+--viewall.html
+<ul th:each="course,iterationStatus: ${student.courses}">
+	       		<li th:text="${course.name} + '-' + ${course.credits}+ ' sks'">
+	       		Nama Kuliah-X sks</li>
+bagian ini ditambahkan untuk memunculkan list course yang sudah diambil tadi kedalam laman htmlnya.
+
+
+------------ VIEW COURSE
+
+-- StudentController
+
+    @RequestMapping("/course/view/{id}")
+    public String viewCourse (Model model,
+            @PathVariable(value = "id") String id)
+    {
+        CourseModel course = studentDAO.selectCourse (id);
+
+        if (course != null) {
+            model.addAttribute ("course", course);
+            return "viewcourse";
+        } else {
+            model.addAttribute ("id", id);
+            return "not-found-course";
+        }
+    }
+untuk menghubungkan method selectCourse dengan laman htmlnya,
+bisa mengecek jika id course tidak ditemukan maka akan mengembalikan laman not-found-course.
+
+-- StudentServiceDatabase
+
+    @Override
+    public CourseModel selectCourse (String id)
+    {
+        log.info ("select course with id {}", id);
+        return studentMapper.selectCourse (id);
+    }
+override method pada StudentService, mengakses selectCourse pada studentMapper
+
+-- StudentService
+
+	CourseModel selectCourse (String id);
+mengembalikan course dengan id yang dimasukan.
+
+-- StudentMapper
+
+    @Select("select student.npm, name  from studentcourse join student on studentcourse.npm = student.npm where studentcourse.id_course = #{id}")
+    List<StudentModel> selectCourseStudent (@Param("id") String id);
+mengembalikan list student yang mengambil course dengan id sesuai dengan yang dimasukan
+    
+    @Select("select id_course, name, credits from course where id_course = #{id}")
+    @Results(value= {
+    		@Result(property="id_course", column="id_course"),
+    		@Result(property="name", column="name"),
+    		@Result(property="credits", column="credits"),
+    		@Result(property="students", column="id_course",
+    		javaType=List.class, 
+    		many=@Many(select="selectCourseStudent"))
+    })
+    CourseModel selectCourse (@Param("id") String id);
+mengembalikan objek course beserta atributnya termasuk list student yang mengambil course tersebut yang diambil dari method selectCourseStudent
